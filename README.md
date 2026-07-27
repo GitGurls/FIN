@@ -1,98 +1,135 @@
-# FinPilot AI — Your Personal Finance Copilot
+<div align="center">
 
-A full AI-powered personal finance platform: expense tracking, receipt OCR,
-an AI financial copilot you can chat with, real-time multi-device sync,
-shared wallets for families and trips, investment tracking, and more.
+# 💸 FinPilot AI
+### Your Personal Finance Copilot
 
-## Stack
-- **Frontend:** React + Vite, Tailwind CSS, Framer Motion, Recharts, lucide-react, socket.io-client, jsPDF, SheetJS (xlsx)
-- **Backend:** Node.js + Express, MongoDB (Mongoose), JWT auth, Socket.io
-- **AI:** Google Gemini 2.5 Flash (receipt OCR, financial Q&A + streaming, health-score narration, voice parsing, monthly reports)
-- **Storage:** Cloudinary (receipt images)
-- **Currency:** Frankfurter.app (free, no key needed)
+An AI-powered personal finance platform — expense tracking, receipt OCR, a real-data-grounded AI copilot you can chat with, real-time multi-device sync, shared wallets for families and trips, and investment tracking, all in one app.
 
-## Getting API keys (all free tier)
+[**Live Demo**](https://fin-eta-eight.vercel.app) · [Report a Bug](https://github.com/GitGurls/FIN/issues) · [Request a Feature](https://github.com/GitGurls/FIN/issues)
 
-**MongoDB Atlas** — https://www.mongodb.com/cloud/atlas/register → free M0
-cluster → Database Access (create a user) → Network Access (allow 0.0.0.0/0
-for dev) → Connect → "Drivers" → copy the connection string into `MONGO_URI`.
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-Express-339933?logo=node.js&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)
+![Socket.io](https://img.shields.io/badge/Socket.io-Realtime-010101?logo=socket.io&logoColor=white)
+![Gemini](https://img.shields.io/badge/Gemini_AI-2.5_Flash-8E75FF?logo=googlegemini&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Cloudinary** — https://cloudinary.com/users/register/free → Dashboard shows
-Cloud Name, API Key, API Secret directly.
+</div>
 
-**Gemini API key** — https://aistudio.google.com/app/apikey → "Create API key".
-Free tier has rate limits (a few requests/min) — fine for dev/demo, not production.
+---
 
-## Setup
+## Overview
 
+FinPilot AI goes beyond a standard expense tracker. Every number the AI shows you — insights, the health score narration, chat answers, monthly reports — is generated **from your real transaction data**, not guessed. The app also syncs live across every device you're logged into, and supports shared budgets for families and trips with automatic expense splitting.
+
+**Live app:** https://fin-eta-eight.vercel.app
+*(Backend runs on Render's free tier — the first request after inactivity can take 30–50s to wake up.)*
+
+---
+
+## ✨ Features
+
+### Core
+- JWT authentication (register, login, profile, account deletion)
+- Income & expense CRUD with custom categories
+- Dashboard analytics via MongoDB aggregation pipelines — net worth, trends, category breakdown
+
+### AI
+| Feature | What it does |
+|---|---|
+| **AI Financial Health Score** | Deterministic 0–100 score (savings rate, budget adherence, spending consistency) with an AI-generated explanation of the biggest lever to improve it |
+| **Chat with your expenses** | Natural-language Q&A grounded in your real transaction data, streamed live for a typing effect |
+| **Receipt OCR** | Upload a photo → Cloudinary storage → Gemini Vision extracts merchant, amount, category → you confirm |
+| **Voice entry** | Speak a transaction ("add 250 for lunch") — Gemini parses it into a structured entry for you to confirm |
+| **Monthly AI Report** | Narrative summary + stats for any of the last 6 months, exportable as PDF |
+
+### Real-time (Socket.io)
+- Multi-device sync — transactions update instantly across every open device/tab
+- Live dashboard, charts, and transaction list
+- Live budget progress bar and real-time budget alerts (90% / 100% thresholds)
+
+### Collaboration
+- **Shared Wallet (Family Budget)** — create a group, invite members by email, see shared expenses live
+- **Trip Mode** — equal-split expense tracking with an automatic settlement calculator ("who owes whom")
+
+### Extras
+- Investment tracker (holdings, gain/loss)
+- Calendar view with a spending heatmap
+- Live currency converter (Frankfurter API, no key needed)
+- PDF & Excel export for transactions and reports
+- Dark / light mode, installable PWA
+
+---
+
+## 🛠 Tech Stack
+
+**Frontend** — React (Vite) · Tailwind CSS · Framer Motion · Recharts · Socket.io-client · jsPDF · SheetJS
+
+**Backend** — Node.js · Express · MongoDB (Mongoose) · JWT · Socket.io
+
+**AI** — Google Gemini 2.5 Flash (Vision OCR, streaming chat, health-score narration, voice parsing, report generation)
+
+**Infra** — MongoDB Atlas · Cloudinary · Vercel (frontend) · Render (backend)
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+Free accounts for: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register), [Cloudinary](https://cloudinary.com/users/register/free), and a [Gemini API key](https://aistudio.google.com/app/apikey).
+
+### 1. Clone and install
 ```bash
-# Backend
+git clone https://github.com/GitGurls/FIN.git
+cd FIN
+```
+
+### 2. Backend
+```bash
 cd backend
 cp .env.example .env   # fill in MONGO_URI, JWT_SECRET, CLOUDINARY_*, GEMINI_API_KEY
 npm install
-npm run dev             # http://localhost:5000
-
-# Frontend (new terminal)
-cd frontend
-cp .env.example .env
-npm install
-npm run dev              # http://localhost:5173
+npm run dev              # runs on http://localhost:5000
 ```
 
-Open http://localhost:5173, register an account, and explore. Voice entry
-needs Chrome (desktop or Android) — Safari/Firefox don't support the
-SpeechRecognition API used.
+### 3. Frontend
+```bash
+cd frontend
+cp .env.example .env     # set VITE_API_URL to your backend URL
+npm install
+npm run dev               # runs on http://localhost:5173
+```
 
-## Full feature list
+Open `http://localhost:5173`, create an account, and explore.
 
-### Core
-- JWT auth (register/login/profile/delete), income & expense CRUD, categories
-- Dashboard analytics via MongoDB aggregation: net worth, trends, category breakdown
+> **Note:** Voice entry uses the browser's SpeechRecognition API, supported in Chrome (desktop & Android) only.
 
-### AI
-- **AI Financial Health Score** — deterministic 0-100 formula (savings rate,
-  budget adherence, spending consistency) + AI-generated explanation
-- **Chat with your expenses** — real-data-grounded Q&A, streamed live over
-  WebSocket for a typing effect
-- **Receipt OCR** — Cloudinary upload → Gemini Vision → editable suggested transaction
-- **Voice entry** — speak a transaction ("add 250 for lunch"), Gemini parses it
-  into type/amount/category/note, you confirm before it's saved
-- **Monthly AI Report** — narrative summary + stats for any of the last 6
-  months, exportable as PDF
+---
 
-### Real-time (Socket.io)
-- Multi-device sync — transactions update instantly across every open
-  device/tab for the same user
-- Live dashboard, charts, and transaction list
-- Live budget progress bar
-- Real-time budget alerts (90% / 100% thresholds, deduplicated per month)
+## 📦 Deployment
 
-### Collaboration
-- **Shared Wallet (Family Budget)** — create a group, invite members by
-  email, everyone sees shared expenses live
-- **Trip Mode** — same group mechanism with equal-split expense tracking and
-  an automatic settlement calculator (minimal "who owes whom" suggestions)
+| Layer | Recommended host | Notes |
+|---|---|---|
+| Backend | Render / Railway | Needs persistent WebSocket support |
+| Frontend | Vercel / Netlify | Set `VITE_API_URL` to the deployed backend URL |
+| Database | MongoDB Atlas | Allow `0.0.0.0/0` in Network Access for cloud hosts |
 
-### Extras
-- **Investment Tracker** — track holdings, invested vs current value, gain/loss
-- **Calendar view** — month grid with a spending heatmap, click a day for its transactions
-- **Currency converter** — live rates via Frankfurter, no API key needed
-- **PDF & Excel export** — transactions list and monthly reports
-- **Dark / Light mode** — toggle in the sidebar, persisted per device
-- **PWA support** — installable, works offline for cached pages (app icons included)
+Set `CLIENT_URL` on the backend to your deployed frontend URL to avoid CORS issues.
 
-## Notes & honest limitations
-- Shared Wallet / Trip invites require the invited person to already have a
-  FinPilot AI account (no email-invite-to-signup flow yet)
-- Settlement suggestions use a simple greedy algorithm — correct, but not
-  necessarily the *minimum* number of transactions in every edge case
-- Voice entry depends on the browser's SpeechRecognition API (Chrome only)
-- None of this has been tested against live API keys end-to-end (I don't have
-  your credentials) — if something errors on first run, share the message and
-  it can be fixed quickly
+---
 
-## Deployment
-- Backend: Render / Railway (needs persistent WebSocket support — both work)
-- Frontend: Vercel / Netlify (set `VITE_API_URL` to your deployed backend URL)
-- Render's free tier cold-starts after inactivity (~30-50s first request) —
-  the socket reconnects automatically after that
+## 🗺 Roadmap / Known Limitations
+- Shared Wallet / Trip invites currently require the invited person to already have an account (no email-invite-to-signup flow yet)
+- Trip settlement suggestions use a greedy algorithm — correct, but not guaranteed to be the *minimum* number of transactions in every edge case
+- Voice entry is Chrome-only (browser API limitation)
+
+---
+
+## 📄 License
+MIT — free to use, modify, and build on.
+
+---
+
+<div align="center">
+Built by <a href="https://github.com/GitGurls">Soni</a>
+</div>
