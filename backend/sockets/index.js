@@ -1,8 +1,11 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const { answerFinanceQueryStream } = require("../utils/gemini");
+const Transaction = require("../models/Transaction");
+const Category = require("../models/Category");
+const { answerFinanceQueryStream, detectAndParseTransactions } = require("../utils/gemini");
 const { buildChatContext } = require("../utils/chatContext");
+const { checkBudgetAlert } = require("../utils/budgetAlert");
 
 let ioInstance = null;
 
@@ -34,6 +37,17 @@ const initSocket = (httpServer) => {
     socket.on("chat:message", async ({ message }) => {
       if (!message?.trim()) return;
       try {
+        const categories = await Category.find({ user: socket.user._id }).select("name -_id");
+        const categoryNames = categories.map((c) => c.name);
+
+        const { isLogging, transactions } = await detectAndParseTransactions(message, categoryNames);
+
+        if (isLogging) {
+          // Don't save yet — let the user review/edit and confirm from the chat UI first.
+          socket.emit("chat:transactions-suggested", { transactions });
+          return;
+        }
+
         const dataContext = await buildChatContext(socket.user);
         let full = "";
         await answerFinanceQueryStream(message, dataContext, (chunk) => {
@@ -44,6 +58,37 @@ const initSocket = (httpServer) => {
       } catch (err) {
         console.error("[chat:message] AI copilot error:", err.message || err);
         socket.emit("chat:error", { message: "AI copilot is unavailable right now." });
+      }
+    });
+
+    // User reviewed the AI-suggested transactions (from a chat message) and confirmed them.
+    socket.on("chat:confirm-transactions", async ({ transactions }) => {
+      try {
+        if (!Array.isArray(transactions) || transactions.length === 0) return;
+
+        const created = await Transaction.insertMany(
+          transactions.map((t) => ({
+            user: socket.user._id,
+            type: t.type === "income" ? "income" : "expense",
+            amount: Number(t.amount) || 0,
+            category: t.category || "Other",
+            note: t.note || "",
+            date: Date.now(),
+            source: "manual",
+          }))
+        );
+
+        created.forEach((transaction) => {
+          emitToUser(socket.user._id, "transaction:created", { transaction });
+        });
+
+        const hasExpense = created.some((t) => t.type === "expense");
+        if (hasExpense) await checkBudgetAlert(socket.user);
+
+        socket.emit("chat:transactions-saved", { count: created.length });
+      } catch (err) {
+        console.error("[chat:confirm-transactions] error:", err.message || err);
+        socket.emit("chat:error", { message: "Couldn't save those transactions — try again." });
       }
     });
 

@@ -160,6 +160,48 @@ ${JSON.stringify(statsContext)}`;
   return result.response.text().trim();
 };
 
+/**
+ * Detects whether a chat message is describing transaction(s) to log (a statement,
+ * e.g. "aaj maine 500 lunch pe kharch kiye") vs a question about existing data.
+ * Returns { isLogging: boolean, transactions: [{ type, amount, category, note }] }
+ */
+const detectAndParseTransactions = async (message, categories) => {
+  const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+  const prompt = `You are a finance-chat intent classifier and parser. The user (may write in
+Hindi/English/Hinglish) sent this message to a finance copilot:
+"${message}"
+
+Available categories: ${categories.join(", ")}
+
+First decide: is this a STATEMENT describing one or more things the user spent money on or
+earned (should be logged as transactions), or is it a QUESTION / general chat about their
+finances (should just be answered, not logged)?
+
+Return ONLY valid JSON (no markdown fences) with this exact shape:
+{
+  "isLogging": boolean,
+  "transactions": [
+    { "type": "income" | "expense", "amount": number, "category": string, "note": string }
+  ]
+}
+If it's a question or isLogging is false, return "transactions": [].
+Pick the closest category match from the available list, or "Other". Extract every distinct
+amount mentioned as a separate transaction.`;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text().trim().replace(/```json|```/g, "").trim();
+
+  try {
+    const parsed = JSON.parse(text);
+    return {
+      isLogging: !!parsed.isLogging && Array.isArray(parsed.transactions) && parsed.transactions.length > 0,
+      transactions: parsed.transactions || [],
+    };
+  } catch (err) {
+    return { isLogging: false, transactions: [] };
+  }
+};
+
 module.exports = {
   extractReceiptData,
   generateInsight,
@@ -168,4 +210,5 @@ module.exports = {
   answerFinanceQueryStream,
   parseVoiceTranscript,
   generateMonthlyReport,
+  detectAndParseTransactions,
 };

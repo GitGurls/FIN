@@ -1,5 +1,4 @@
 const Transaction = require("../models/Transaction");
-const { emitToUser } = require("../sockets");
 
 /**
  * After an expense is created/updated, checks whether the user's monthly budget
@@ -7,6 +6,7 @@ const { emitToUser } = require("../sockets");
  * per threshold per month (tracked on the user document to avoid repeat spam).
  */
 const checkBudgetAlert = async (user) => {
+  const { emitToUser } = require("../sockets");
   if (!user.monthlyBudget || user.monthlyBudget <= 0) return;
 
   const now = new Date();

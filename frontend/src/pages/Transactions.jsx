@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Trash2, X, Mic, FileDown, FileSpreadsheet } from "lucide-react";
+import { Plus, Trash2, X, Mic, FileDown, FileSpreadsheet, FileText, Search, Wallet } from "lucide-react";
 import Layout from "../components/Layout";
 import VoiceEntry from "../components/VoiceEntry";
+import ConfirmDialog from "../components/ConfirmDialog";
+import EmptyState from "../components/EmptyState";
+import { SkeletonRow } from "../components/Skeleton";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { useSocket } from "../context/SocketContext";
-import { exportTransactionsToPDF, exportTransactionsToExcel } from "../lib/export";
+import { exportTransactionsToPDF, exportTransactionsToExcel, exportTransactionsToCSV } from "../lib/export";
+import { toastSuccess, toastError } from "../lib/toast";
 
 const emptyForm = { type: "expense", amount: "", category: "", note: "", date: "" };
 
@@ -16,22 +20,30 @@ const Transactions = () => {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filterType, setFilterType] = useState("");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const load = async () => {
-    const params = filterType ? { type: filterType } : {};
+    const params = {};
+    if (filterType) params.type = filterType;
+    if (search.trim()) params.search = search.trim();
     const res = await api.get("/transactions", { params });
     setItems(res.data.items);
+    setLoading(false);
   };
 
   useEffect(() => {
-    load();
+    setLoading(true);
+    const t = setTimeout(load, 300);
     api.get("/categories").then((res) => setCategories(res.data.categories));
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterType]);
+  }, [filterType, search]);
 
   useEffect(() => {
     if (!socket) return;
@@ -45,7 +57,7 @@ const Transactions = () => {
       socket.off("transaction:deleted", refresh);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, filterType]);
+  }, [socket, filterType, search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,14 +71,24 @@ const Transactions = () => {
       setForm(emptyForm);
       setShowForm(false);
       load();
+      toastSuccess("Transaction added", `${form.type === "income" ? "+" : "-"}${form.amount} · ${form.category}`);
+    } catch (err) {
+      toastError("Couldn't add transaction", err.response?.data?.message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    await api.delete(`/transactions/${id}`);
-    load();
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/transactions/${deleteTarget._id}`);
+      setDeleteTarget(null);
+      load();
+      toastSuccess("Transaction deleted");
+    } catch (err) {
+      toastError("Couldn't delete transaction", err.response?.data?.message);
+    }
   };
 
   const relevantCategories = categories.filter((c) => c.type === form.type);
@@ -76,12 +98,12 @@ const Transactions = () => {
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-display font-semibold">Transactions</h1>
           <p className="text-mist-500 text-sm mt-1">All your income and expenses in one place.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => exportTransactionsToPDF(items, currency)}
             className="btn-ghost"
@@ -96,6 +118,9 @@ const Transactions = () => {
           >
             <FileSpreadsheet size={16} />
           </button>
+          <button onClick={() => exportTransactionsToCSV(items)} className="btn-ghost" title="Export as CSV">
+            <FileText size={16} />
+          </button>
           <button onClick={() => setVoiceOpen(true)} className="btn-ghost">
             <Mic size={16} /> Voice
           </button>
@@ -107,56 +132,90 @@ const Transactions = () => {
 
       <VoiceEntry open={voiceOpen} onClose={() => setVoiceOpen(false)} onConfirmed={load} />
 
-      <div className="flex gap-2 mb-4">
-        {["", "income", "expense"].map((t) => (
-          <button
-            key={t}
-            onClick={() => setFilterType(t)}
-            className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${
-              filterType === t
-                ? "border-mint-400/40 text-mint-400 bg-mint-400/10"
-                : "border-glass text-mist-500 hover:text-mist-100"
-            }`}
-          >
-            {t === "" ? "All" : t === "income" ? "Income" : "Expense"}
-          </button>
-        ))}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-mist-500" />
+          <input
+            className="glass-input pl-9"
+            placeholder="Search by category or note…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-2">
+          {["", "income", "expense"].map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilterType(t)}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-colors whitespace-nowrap ${
+                filterType === t
+                  ? "border-mint-400/40 text-mint-400 bg-mint-400/10"
+                  : "border-glass text-mist-500 hover:text-mist-100"
+              }`}
+            >
+              {t === "" ? "All" : t === "income" ? "Income" : "Expense"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="glass-card divide-y divide-glass">
-        {items.length === 0 && (
-          <p className="text-sm text-mist-500 text-center py-12">
-            No transactions yet — add your first one to see it here.
-          </p>
-        )}
-        {items.map((t) => (
-          <div key={t._id} className="flex items-center justify-between px-5 py-4">
-            <div>
-              <p className="text-sm font-medium text-mist-100">{t.category}</p>
-              <p className="text-xs text-mist-500">
-                {new Date(t.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                {t.note ? ` · ${t.note}` : ""}
-              </p>
+      {loading ? (
+        <div className="glass-card divide-y divide-glass">
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonRow key={i} />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={Wallet}
+          title="No transactions yet"
+          subtitle="Start by adding your first income or expense — or try Voice / Scan Receipt."
+          actionLabel="Add Transaction"
+          onAction={() => setShowForm(true)}
+        />
+      ) : (
+        <div className="glass-card divide-y divide-glass">
+          {items.map((t) => (
+            <div key={t._id} className="flex items-center justify-between px-5 py-4">
+              <div>
+                <p className="text-sm font-medium text-mist-100">{t.category}</p>
+                <p className="text-xs text-mist-500">
+                  {new Date(t.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  {t.note ? ` · ${t.note}` : ""}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span
+                  className={`stat-mono text-sm font-semibold ${
+                    t.type === "income" ? "text-mint-400" : "text-coral-400"
+                  }`}
+                >
+                  {t.type === "income" ? "+" : "-"}
+                  {fmt(t.amount)}
+                </span>
+                <button
+                  onClick={() => setDeleteTarget(t)}
+                  className="text-mist-500 hover:text-coral-400 transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <span
-                className={`stat-mono text-sm font-semibold ${
-                  t.type === "income" ? "text-mint-400" : "text-coral-400"
-                }`}
-              >
-                {t.type === "income" ? "+" : "-"}
-                {fmt(t.amount)}
-              </span>
-              <button
-                onClick={() => handleDelete(t._id)}
-                className="text-mist-500 hover:text-coral-400 transition-colors"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete this transaction?"
+        message={
+          deleteTarget
+            ? `${deleteTarget.category} · ${fmt(deleteTarget.amount)} — this can't be undone.`
+            : ""
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       <AnimatePresence>
         {showForm && (
