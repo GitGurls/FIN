@@ -22,9 +22,6 @@ An AI-powered personal finance platform — expense tracking, receipt OCR, a rea
 FinPilot AI goes beyond a standard expense tracker. Every number the AI shows you — insights, the health score narration, chat answers, monthly reports — is generated **from your real transaction data**, not guessed. The app also syncs live across every device you're logged into, and supports shared budgets for families and trips with automatic expense splitting.
 
 **Live app:** https://fin-eta-eight.vercel.app
-*(Backend runs on Render's free tier — the first request after inactivity can take 30–50s to wake up.)*
-
----
 
 ## ✨ Features
 
