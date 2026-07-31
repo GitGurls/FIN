@@ -1,7 +1,6 @@
 <div align="center">
 
 # 💸 FinPilot AI
-### Your Personal Finance Copilot
 
 An AI-powered personal finance platform — expense tracking, receipt OCR, a real-data-grounded AI copilot you can chat with, real-time multi-device sync, shared wallets for families and trips, and investment tracking, all in one app
 
