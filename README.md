@@ -100,17 +100,6 @@ Open `http://localhost:5173`, create an account, and explore.
 
 > **Note:** Voice entry uses the browser's SpeechRecognition API, supported in Chrome (desktop & Android) only.
 
----
-
-## 📦 Deployment
-
-| Layer | Recommended host | Notes |
-|---|---|---|
-| Backend | Render / Railway | Needs persistent WebSocket support |
-| Frontend | Vercel / Netlify | Set `VITE_API_URL` to the deployed backend URL |
-| Database | MongoDB Atlas | Allow `0.0.0.0/0` in Network Access for cloud hosts |
-
-Set `CLIENT_URL` on the backend to your deployed frontend URL to avoid CORS issues.
 
 ---
 
