@@ -108,9 +108,6 @@ Open `http://localhost:5173`, create an account, and explore.
 - Trip settlement suggestions use a greedy algorithm — correct, but not guaranteed to be the *minimum* number of transactions in every edge case
 - Voice entry is Chrome-only (browser API limitation)
 
----
-
-## 📄 License
 
 
 ---
