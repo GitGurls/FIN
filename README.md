@@ -111,7 +111,7 @@ Open `http://localhost:5173`, create an account, and explore.
 ---
 
 ## 📄 License
-MIT — free to use, modify, and build on.
+
 
 ---
 
