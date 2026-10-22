@@ -110,7 +110,3 @@ Open `http://localhost:5173`, create an account, and explore.
 
 
 
----
-
-<div align="center">
-
